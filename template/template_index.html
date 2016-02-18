@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title><TMPL_VAR NAME=M_TITLE></title>
+<style>
+body {
+	font-family: verdana, arial, sans-serif; 
+}
+#footer {
+	margin-top: 25px;
+	margin-bottom: 10px;
+	text-align: center;
+	font-size: 12px;
+	color: #999;
+}
+</style>
+</head>
+<body>
+<TMPL_VAR NAME=M_PATH><hr>
+
+	<div id="header">
+		<h2><TMPL_VAR NAME=M_PAGE_DESC></h2>
+	</div>
+
+	<div id="content">
+<ul>
+<TMPL_LOOP NAME="M_OUTER_LOOP"> 
+	<li><a href='<TMPL_VAR NAME=M_LOOP_LINK>'><TMPL_VAR NAME=M_LOOP_VAL></a></li>
+</TMPL_LOOP>                    
+</ul>
+	</div>
+
+
+	<div id="footer">
+		&copy; 2014-2015 // <a href='http://h43.unixpin.com'> h43.unixpin.com </a>
+	</div>
+
+</body>
+</html>

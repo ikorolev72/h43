@@ -1,0 +1,475 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title><TMPL_VAR NAME=M_TITLE></title>
+	<!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../../flot/excanvas.min.js"></script><![endif]-->
+	<script language="javascript" type="text/javascript" src="../../flot/jquery.min.js"></script>
+	<script language="javascript" type="text/javascript" src="../../flot/jquery.flot.min.js"></script>
+	<script language="javascript" type="text/javascript" src="../../flot/jquery.flot.time.min.js"></script>
+	<script language="javascript" type="text/javascript" src="../../flot/jquery.flot.stack.min.js"></script>
+	<script language="javascript" type="text/javascript" src="../../flot/jquery.flot.selection.min.js"></script>
+	
+<style>
+body {
+	font-family: verdana, arial, sans-serif; 
+}
+#header {
+	font-size: 13pt; 
+	padding: 10pt;
+	border: 1px solid #777;
+}
+#footer {
+	margin-top: 25px;
+	margin-bottom: 10px;
+	text-align: center;
+	font-size: 12px;
+	color: #999;
+}
+#reportname {
+	font-size: 10pt; 
+}
+.rep-container {
+	box-sizing: border-box;
+	width: 1000px;
+	height: 400px;
+	padding: 10px 10px 10px 10px;
+	margin: 10px auto 20px auto;
+	border: 1px solid #ddd;
+
+}
+
+.rep-placeholder {
+	width: 750px;
+	height: 100%;
+	float:left;
+}
+
+
+
+.rep-choises {
+	float:right; 
+	width:220px;
+	height: 95%;	
+	overflow: auto;	
+}
+
+
+#btn_up {
+	position: fixed;
+	background-color: yellow;
+	color; black;
+	font-size: 14px;
+	width: 60px;
+	height: 30px;
+	right: 100px;
+	bottom: 50px;
+	display: none;
+	cursor: pointer;
+}
+
+.ctl_choise_table {
+	//width: '100%';
+	//border: 1px solid #bbbbbb;
+}
+
+
+</style>
+
+ </head>
+    <body>
+<div id="btn_up" align="center"> up </div>
+
+<TMPL_VAR NAME=M_PATH><hr>
+
+<div id="header">
+	<TMPL_VAR NAME=M_PAGE_DESC>
+</div>
+<br><br>
+</a>
+<div id="timeselect">
+			Select time range ( use mouse )
+		</div>
+		<div class="rep-container" style="height:100px;">
+			<div id="overview" class="rep-placeholder"></div>
+			<p class="rep-choises"><a href="javascript:overview.clearSelection()"> clear selection </a></p>	
+		</div>
+	<hr size=8 noshade color=#F0F0F0  />
+	
+<TMPL_LOOP NAME="M_OUTER_LOOP"> 	
+<div id="reportname">
+	<TMPL_VAR NAME=M_REPORT_NAME>
+</div>
+<br>
+	
+		<div class="rep-container">
+			<div id="placeholder<TMPL_VAR NAME=M_VERSION>" class="rep-placeholder"></div>
+			<p id="choices<TMPL_VAR NAME=M_VERSION>" class="rep-choises"><a href="javascript:overview.clearSelection()"> clear selection </a>
+			</p>
+			
+		</div>
+
+	<hr size=8 noshade color=#F0F0F0  />
+
+</TMPL_LOOP>	
+
+	<script type="text/javascript">
+		var dataTime = [ <TMPL_VAR NAME=M_DATATIME> ];
+		var d_overwiev=[];
+		for( var i=0; i< dataTime.length; i++ ) {
+			var k=[];
+			k.push( dataTime[i] );
+			k.push( 0 );
+			d_overwiev.push( k );
+		}
+
+<TMPL_LOOP NAME="M_OUTER_LOOP"> 		
+		var plot<TMPL_VAR NAME=M_VERSION>;
+		var dataSets<TMPL_VAR NAME=M_VERSION> = {
+			<TMPL_LOOP NAME="M_INNER_LOOP"> 			
+				<TMPL_VAR NAME=M_TAG> :	{
+				label:'<TMPL_VAR NAME=M_LABEL>',
+				alldata:[<TMPL_VAR NAME=M_ALLDATA>]
+				},
+			</TMPL_LOOP>                    
+		}		
+</TMPL_LOOP>		
+		var overview = $.plot("#overview", [ d_overwiev ], {
+				legend: {
+				    show: false
+				},
+				series: {
+					lines: {
+						show: false,
+						//lineWidth: 1
+					},
+					shadowSize: 0
+				},
+				xaxis: {
+					mode: "time",
+					timeformat: "%H:%M",
+
+				},
+				yaxis: {
+					ticks: [],
+
+				},
+				selection: {
+					mode: "x"
+				}
+		});
+		
+function asvc ( data, max ) {
+	var s=0;
+	if( !!max ) {
+		for(var k=0 ; k<data.length; k++ ) {
+			if(s<data[k]) {
+				s=data[k];
+			}
+		}
+		return(s);
+	}
+	for(var k=0 ; k<data.length; k++ ) {
+		s+=data[k];
+	}
+	return ( s/data.length );
+}
+
+		
+function getDatasets ( dataSets, dataTime, newSize, timeStart, timeEnd ) {
+	for( var ds in dataSets ) { // check if all variable set 
+		//console.log( 	!!dataSets[ds].newSize, dataSets[ds].newSize, dataSets[ds].timeEnd, dataSets[ds].timeStart);
+		if(	!!dataSets[ds].newSize && dataSets[ds].newSize == newSize && 
+			dataSets[ds].timeEnd == timeEnd  &&
+			dataSets[ds].timeStart == timeStart
+			 ) 
+			{
+				return( true );
+		}
+	}
+	var start=0;
+	var end=dataTime.length;
+	if( !!timeStart ) { // if defined timeStart
+		for(var k=0; k<dataTime.length; k++ ) {
+			if( timeStart <= dataTime[k] ) {
+				start=k;
+				break;
+			}
+		}
+	}
+	if( !!timeEnd ) {
+		for(var k=dataTime.length-1; k>0; k-- ) {
+			//alert(k);
+			if( timeEnd >= dataTime[k] ) {
+				end=k;
+				break;
+			}
+		}
+	}
+	var delta;
+	var size=newSize;
+	if( end-start < size ) {
+		size=end-start;
+	}
+	delta=(end-start)/size;
+	//console.log( start+" "+end );
+	for( var ds in dataSets ) {
+		dataSets[ds].timeStart = timeStart;
+		dataSets[ds].timeEnd = timeEnd ;
+		dataSets[ds].newSize = newSize ;
+		dataSets[ds].data=[];
+		dataSets[ds].key=ds;
+		if( dataSets[ds].data.length>0 ) {
+			dataSets[ds].data.length=0 ;
+		}
+		var i;
+		for( i=0 ; i<size ; i++ ) {
+			var newData=[];
+			//console.log( Math.round(i*delta+start), Math.round((i+1)*delta+start)  );
+			newData[0]=asvc( dataTime.slice( Math.round(i*delta+start), Math.round((i+1)*delta+start)  ) );
+			newData[1]=asvc( dataSets[ds].alldata.slice( Math.round(i*delta+start), Math.round((i+1)*delta+start)  ), true );
+			//console.log( newData );
+			dataSets[ds].data.push( newData );
+		}
+		//console.log(  i );		
+	}
+	return( true );
+}						
+		
+
+
+	
+function insertMyLegend( legendContainer, dataSets, colors ) {		
+			var labelBoxBorderColor = '#ccc';
+			var gridColor = "#545454"; 
+			var noColumns = 1;
+            var fragments = [],  rowStarted = false ;
+			var i=0;
+			var rEx;
+			var ctrUnit={};
+			$.each(dataSets, function(key, val) {
+
+                if (i % noColumns == 0) {
+                    if (rowStarted)
+                        fragments.push('</tr>');
+                    fragments.push('<tr>');
+                    rowStarted = true;
+                }
+				fragments.push(
+                    '<td class="legendColorBox"><div style="border:1px solid ' + 
+					labelBoxBorderColor + ';padding:1px">'+
+					'<div style="width:4px;height:0;border:5px solid   ' + colors[ val.color ] + ';overflow:hidden"></div></div></td>' +
+                    '<td class="legendLabel">' +
+					"<input type='checkbox' key='" + key +
+					"' checked='checked' id='id" + key + "'></input>" +
+					val.label + '</td>'
+                );
+				++i;
+				var a=val.label.split( " " )[0].split(':');				
+				var b=val.label.split( " " )[1].split(':');
+				rEx="S:d_" + a.join( "_" );
+				for( var k=0; k<a.length-1; k++ ) {
+					if( !ctrUnit[ a[k] ] ) {
+						ctrUnit[ a[k] ] = {};
+					}
+					ctrUnit[ a[k] ][ b[k] ]=rEx;
+					for( var z=0; z<a.length ;z++ ) {
+						ctrUnit[ a[k] ][ b[k] ]+= (z==k)?"_"+b[k]:"_\\w+"
+					}
+				}
+			});
+			if( i > 15 ) {
+				
+				var a="<hr/><table class='ctl_choise_table'>";
+				for (var k in ctrUnit ) {					
+					a+="<tr valign='top'><td>"+k+"</td><td> ";
+					for (var m in ctrUnit[ k ] ) {
+					a+="<input type='checkbox' key='" + ctrUnit[ k ][m] + "' checked='checked' id='S_" + k + "_" + m +  "'></input> " + m ;
+					}					
+					a+="</td></tr><tr><td colspan='2'><hr/></td></tr>";
+				}
+				a+="</table>";
+				$(legendContainer).append(a);
+			}
+            if (rowStarted)
+                fragments.push('</tr>');
+
+            if (fragments.length == 0)
+                return;
+
+            var table = $(legendContainer).html() + '<table style="font-size:smaller;color:' + gridColor + '">' + fragments.join("") + '</table>';
+            $(legendContainer).html(table);
+        }
+	
+function generateColors( neededColors, colors ) {
+            options = {
+                colors: ["#edc240", "#afd8f8", "#cb4b4b", "#4da74d", "#9440ed"],
+			}		
+            var c, colors = [], colorPool = options.colors, i, 
+                colorPoolSize = colorPool.length, variation = 0;
+
+            for (i = 0; i < neededColors; i++) {
+                c = $.color.parse(colorPool[i % colorPoolSize] || "#666");
+                if (i % colorPoolSize == 0 && i) {
+                    if (variation >= 0) {
+                        if (variation < 0.5) {
+                            variation = -variation - 0.2;
+                        } else variation = 0;
+                    } else variation = -variation;
+                }
+                colors[i] = c.scale('rgb', 1 + variation).toString();
+            }
+			return ( colors );
+        }
+
+
+
+		
+
+<TMPL_LOOP NAME="M_OUTER_LOOP"> 	
+		$(function version<TMPL_VAR NAME=M_VERSION> () {
+
+		var i = 0;
+		$.each(dataSets<TMPL_VAR NAME=M_VERSION>, function(key, val) {
+			val.color = i;
+			++i;
+		});
+		var colors=[];
+		colors=generateColors(  i + 5 ); 
+		var choiseS={};
+		
+		var choiceContainer = $("#choices<TMPL_VAR NAME=M_VERSION>");
+		insertMyLegend( choiceContainer, dataSets<TMPL_VAR NAME=M_VERSION>, colors );
+		choiceContainer.find("input").click(plotAccordingToChoices<TMPL_VAR NAME=M_VERSION>);
+<TMPL_IF NAME="M_STACKING">		
+		var	stack = 0, 
+			bars = true,
+			lines = true,
+			steps = false;
+</TMPL_IF>
+
+		
+		
+		function plotAccordingToChoices<TMPL_VAR NAME=M_VERSION>() {
+
+			var data = [];
+			var ranges=overview.getSelection();
+			if( ranges!= null ) {
+				getDatasets( dataSets<TMPL_VAR NAME=M_VERSION> , dataTime, 200, ranges.xaxis.from, ranges.xaxis.to );
+			} else {
+				getDatasets( dataSets<TMPL_VAR NAME=M_VERSION> , dataTime, 200 );
+			}		
+			var rEx=[];
+			var choiceContainerInput=choiceContainer.find("input");
+			choiceContainerInput.each(function () {
+				var key = $(this).attr("key");
+				var rEx;
+				rEx=key.split(":");
+					if( rEx[0]=="S" ) { 
+						var myChecked=$(this).prop("checked");
+						if( choiseS[ this.id ] != myChecked ) {
+							choiseS[ this.id ]=myChecked;
+							
+							choiceContainerInput.each(function ( ) {
+								var newKey = $(this).attr("key");
+								if( newKey.search( rEx[1] ) != -1 ) { 
+									//$(this).attr("disabled", !myChecked );
+									$(this).prop("checked", myChecked );
+								} 
+							});
+						} 
+					}
+			});
+			choiceContainerInput.each(function () {
+				var key = $(this).attr("key");
+				if (key && dataSets<TMPL_VAR NAME=M_VERSION>[key] && !$(this).attr("disabled") && $(this).prop("checked") ) {
+					data.push( dataSets<TMPL_VAR NAME=M_VERSION>[key] );
+				}
+			});
+
+			var k=0;
+
+			var legendEntries=[];
+
+			var options = {
+				colors: colors ,
+				legend: {
+					show: false,
+				},
+				xaxis: {
+						mode: "time",
+						timeformat: "%H:%M",
+				},
+				selection: {
+					mode: "x"
+				}, 
+				<TMPL_IF NAME="M_STACKING">		
+				series: {
+					stack: stack,
+					lines: {
+						show: lines,
+						fill: true,
+						steps: false
+					},
+				}
+				</TMPL_IF>
+			};
+			if (data.length > 0) {
+				plot<TMPL_VAR NAME=M_VERSION> = $.plot( "#placeholder<TMPL_VAR NAME=M_VERSION>", data, options );
+
+					if( ranges!= null ) {
+						$.each(plot<TMPL_VAR NAME=M_VERSION>.getXAxes(), function(_, axis) {
+							var opts = axis.options;
+							opts.min = ranges.xaxis.from;
+							opts.max = ranges.xaxis.to;
+						});			
+						plot<TMPL_VAR NAME=M_VERSION>.setupGrid();
+						plot<TMPL_VAR NAME=M_VERSION>.draw();
+						plot<TMPL_VAR NAME=M_VERSION>.clearSelection();
+					}	
+			}
+		}
+
+
+		plotAccordingToChoices<TMPL_VAR NAME=M_VERSION>();
+
+
+		$("#placeholder<TMPL_VAR NAME=M_VERSION>").bind("plotselected", function (event, ranges) {
+			overview.setSelection(ranges, false);		// !!!!!
+		});	
+		
+		$("#overview").bind("plotselected", function (event, ranges) {
+			plotAccordingToChoices<TMPL_VAR NAME=M_VERSION>();
+		});
+		
+		$("#overview").bind("plotunselected", function (event) {
+			plotAccordingToChoices<TMPL_VAR NAME=M_VERSION>();
+		});						
+	});
+
+</TMPL_LOOP>                    
+
+//Check to see if the window is top if not then display button
+	$(window).scroll(function(){
+		if ($(this).scrollTop() > 200) {
+			$('#btn_up').show();
+		} else {
+			$('#btn_up').hide();
+		}
+	});
+	
+	//Click event to scroll to top
+	$('#btn_up').click(function(){
+		$('html, body').animate({scrollTop : 0},400);
+		return false;
+	});
+	
+</script>   
+
+
+	<div id="footer">
+		&copy; 2014-2015 // <a href='http://h43.unixpin.com'> h43.unixpin.com </a>
+	</div>
+
+ </body>
+</html>
